@@ -2,6 +2,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import ParameterGrid
 import time
+import traceback
 
 def get_pipeline2 (vectorizer, classifier):
     return Pipeline(
@@ -91,6 +92,7 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
                 scores = cross_val_score(pipeline, data, labels, cv=cv, scoring=scoring, n_jobs=n_jobs,
                                          pre_dispatch=pre_dispatch)
             except:
+                print(traceback.format_exc())
                 print('!!!!! Something went wrong with iteration {}, search params = {}. Going next ?!?!...'.format(
                     currentIteration, pipeline.named_steps))
                 currentIteration += 1
