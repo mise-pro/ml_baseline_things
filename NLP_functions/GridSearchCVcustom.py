@@ -43,9 +43,7 @@ def detect_search_params(search):
 
 
 def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, scoring='accuracy', printNotes=True,
-                       countdownElems=10, pre_dispatch=1, showSteps=False, itersToPerform = None):
-
-    #TODO: compare 2 arrays: all itersToPerform shold be in ParameterGrid(param_grid) - raise warning
+                       countdownElems=5, pre_dispatch=1, showSteps=False, itersToPerform = None):
 
     if itersToPerform == 'All':
         itersToPerform = [i+1 for i in range(0, len(list(ParameterGrid(param_grid))))]
@@ -70,20 +68,23 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
 
     if itersToPerform is None:
         print('No iterations will be really performed, exiting')
-        return 0, 0
+        return 0, 0, 0
 
     startGlobalTime = time.time()
     bestScore = 0
     bestScoreParams = 0
-    totalIterations = len(itersToPerform)
+    bestIter = 1
+
+    totalIterations = len(set(itersToPerform) & set(range(1, len(list(ParameterGrid(param_grid))))))
     currentIteration = itersToPerform[0]
     currentIterationNum = 0
 
+    print('\n')
     print('--==Calculations...==--')
     for search in list(ParameterGrid(param_grid)):
 
         if currentIteration in itersToPerform:
-            #print ('currentIteration =', currentIteration)
+
             currentIterationNum += 1
             clf, clf_params, vect, vect_params = detect_search_params(search)
             pipeline.set_params(**{'vect': (type(vect))(**vect_params)}, **{'clf': (type(clf))(**clf_params)})
@@ -96,12 +97,12 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
                 print('!!!!! Something went wrong with iteration {}, search params = {}. Going next ?!?!...'.format(
                     currentIteration, pipeline.named_steps))
                 currentIteration += 1
-                # currentIterationNum += 1
-                # continue # for experimental!
-                break
+                continue # for experimental!
+                # break
             if float(scores.mean()) > bestScore:
                 bestScore = scores.mean()
                 bestScoreParams = pipeline.named_steps
+                bestIter = currentIteration
                 if printNotes:
                     print(
                         'New best result = {} (std = {}) during {} [secs] (iter = {}) for search with params \n{}\n'.format(
@@ -111,11 +112,13 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
             if printNotes and currentIterationNum > 0 and ((totalIterations - currentIterationNum) % countdownElems == 0):
                 print('Iterations to perform: {}'.format(totalIterations - currentIterationNum))
                 avgIterTime = (time.time() - startGlobalTime)/currentIterationNum * 1.
-                print('Average time for iteration [secs]: {}'.format(round(avgIterTime, 1)))
+                print('Average time for iteration [mins]: {}'.format(round(avgIterTime / 60., 2)))
                 print('Job will be done in (approximately) [mins] : {}\n'.format(round(avgIterTime * (totalIterations - currentIterationNum) / 60., 1)))
+                      #todo: may be added destination time
+                      #time.strftime('%H:%M:%S', time.localtime(avgIterTime * (totalIterations - currentIterationNum) - startGlobalTime))))
 
         currentIteration += 1
 
-    print('Average time for iteration [secs]: {}'.format(round((time.time() - startGlobalTime) / 60., 1)))
     print('Congrats! All DONE. Total time is [mins]: {}'.format(round((time.time() - startGlobalTime) / 60., 2)))
-    return bestScore, bestScoreParams
+    print('BestIter was {}, bestScore = {}, bestScoreParams = {}'.format(bestIter, bestScore, bestScoreParams))
+    return bestScore, bestScoreParams, bestIter
