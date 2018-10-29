@@ -4,13 +4,16 @@ from sklearn.model_selection import ParameterGrid
 import time
 import traceback
 
-def get_pipeline2 (vectorizer, classifier):
+def get_pipeline_1step(classifier):
+    return Pipeline([("clf", classifier)])
+
+def get_pipeline_2steps(vectorizer, classifier):
     return Pipeline(
             [("vect", vectorizer),
             ("clf", classifier)]
         )
 
-def get_pipeline3(vectorizer, transformer, classifier):
+def get_pipeline_3steps(vectorizer, transformer, classifier):
     return Pipeline(
             [("vect", vectorizer),
             ("trans", transformer),
@@ -43,7 +46,7 @@ def detect_search_params(search):
 
 
 def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, scoring='accuracy', printNotes=True,
-                       countdownElems=5, pre_dispatch=1, showSteps=False, itersToPerform = None):
+                       countdownElems=1, pre_dispatch=1, showSteps=False, itersToPerform = None):
 
     if itersToPerform == 'All':
         itersToPerform = [i+1 for i in range(0, len(list(ParameterGrid(param_grid))))]
@@ -87,7 +90,11 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
 
             currentIterationNum += 1
             clf, clf_params, vect, vect_params = detect_search_params(search)
-            pipeline.set_params(**{'vect': (type(vect))(**vect_params)}, **{'clf': (type(clf))(**clf_params)})
+            #TODO - if 3 steps pipeline will be added - should be modificated
+            if len(vect) == 0:
+                pipeline.set_params(**{'clf': (type(clf))(**clf_params)})
+            else:
+                pipeline.set_params(**{'vect': (type(vect))(**vect_params)}, **{'clf': (type(clf))(**clf_params)})
             try:
                 startIterTime = time.time()
                 scores = cross_val_score(pipeline, data, labels, cv=cv, scoring=scoring, n_jobs=n_jobs,
