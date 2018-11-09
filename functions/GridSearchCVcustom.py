@@ -104,8 +104,8 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
                 print('!!!!! Something went wrong with iteration {}, search params = {}. Going next ?!?!...'.format(
                     currentIteration, pipeline.named_steps))
                 currentIteration += 1
-                continue # for experimental!
-                # break
+                #continue # for experimental!
+                break
             if float(scores.mean()) > bestScore:
                 bestScore = scores.mean()
                 bestScoreParams = pipeline.named_steps
@@ -117,7 +117,7 @@ def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, sco
                             currentIteration, search.items()))
 
             if printNotes and currentIterationNum > 0 and ((totalIterations - currentIterationNum) % countdownElems == 0):
-                print('Iterations to perform: {}'.format(totalIterations - currentIterationNum))
+                print('Iterations to perform: {}'.format(totalIterations - currentIterationNum + 1))
                 avgIterTime = (time.time() - startGlobalTime)/currentIterationNum * 1.
                 print('Average time for iteration [mins]: {}'.format(round(avgIterTime / 60., 2)))
                 print('Job will be done in (approximately) [mins] : {}\n'.format(round(avgIterTime * (totalIterations - currentIterationNum) / 60., 1)))

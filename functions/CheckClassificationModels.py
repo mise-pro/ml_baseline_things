@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 # from sklearn.grid_search import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
+import lightgbm as lgb
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.model_selection import cross_val_score
@@ -17,7 +18,6 @@ from sklearn import metrics
 from sklearn.model_selection import ParameterGrid
 import time
 
-#these models
 
 def linear_scorer(estimator, x, y):
     scorer_predictions = estimator.predict(x)
@@ -40,6 +40,19 @@ def global_check_clf_models (dataMods, dataTarget, cvs, RS, n_jobs = -1, debugMo
 
     print('Congrats! All DONE. Total time is [mins]: {}\n'.format(round((time.time() - startGlobalTime) / 60., 2)))
     return results
+
+#use this method for debug while adding new model to list
+def check_clf_model_candidate(data, dataTarget, RS, cv, n_jobs, debugMode):
+
+    result = pd.DataFrame(columns=['Model', 'Accuracy', 'Std', 'Time[secs]'])
+
+    ### enter candidate code here
+
+    result.sort_values(by='Accuracy', ascending=False, inplace=True)
+    result.loc[len(result)] = ['TOTAL AVG', result['Accuracy'].mean(), result['Std'].mean(),
+                                 result['Time[secs]'].mean()]
+    return result
+
 
 def check_clf_models(data, dataTarget, RS, cv, n_jobs, debugMode):
 
@@ -112,10 +125,10 @@ def check_clf_models(data, dataTarget, RS, cv, n_jobs, debugMode):
         print("LogisticRegression DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
         print("RandomForestClassifier calculating ... ")
 
-    rForest = RandomForestClassifier(random_state=RS, n_estimators=1000, min_samples_split=8, min_samples_leaf=2)
+    rForest = RandomForestClassifier(random_state=RS)
     startIterTime = time.time()
     scores = cross_val_score(rForest, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['RandomForestClassifier (n_estim=1000)', scores.mean(), scores.std(), round(time.time() - startIterTime, 0)]
+    result.loc[len(result)] = ['RandomForestClassifier (auto)', scores.mean(), scores.std(), round(time.time() - startIterTime, 0)]
 
     if debugMode:
         print("RandomForestClassifier DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
@@ -149,6 +162,15 @@ def check_clf_models(data, dataTarget, RS, cv, n_jobs, debugMode):
 
     if debugMode:
         print("Perceptron DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
+        print("LightGBM calculating ... ")
+
+    lgbModel = lgb.LGBMClassifier(random_state=RS)
+    startIterTime = time.time()
+    scores = cross_val_score(lgbModel, data, dataTarget, cv=cv, n_jobs=n_jobs)
+    result.loc[len(result)] = ['LightGBM ', scores.mean(), scores.std(), round(time.time() - startIterTime, 0)]
+
+    if debugMode:
+        print("LightGBM DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
 
     result.sort_values(by='Accuracy', ascending=False, inplace=True)
     result.loc[len(result)] = ['TOTAL AVG', result['Accuracy'].mean(), result['Std'].mean(),
