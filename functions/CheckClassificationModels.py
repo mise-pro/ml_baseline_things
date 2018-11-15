@@ -17,7 +17,6 @@ from sklearn.linear_model import Perceptron
 from sklearn import metrics
 from sklearn.model_selection import ParameterGrid
 import time
-import random
 from datetime import datetime
 
 
@@ -194,22 +193,22 @@ def postprocess_and_save_results(results, selectedFeatures, cvs, dataTrainMods, 
     accuracyColumns = ['Acc.' + str(c) for c in range(0, len(results))]
     summaryTable['Total Acc.'] = summaryTable[accuracyColumns].sum(axis=1)
 
+
+    # all to file
+    featureList = pd.DataFrame(selectedFeatures, columns=['featureName']).T
+
+    summaryTable = summaryTable.sort_values(by='Total Acc.', ascending=False)
+
     summaryTableAgg = summaryTable[positionColumns + ['Total Acc.', 'Sum Pos.']].sort_values(by='Total Acc.',
                                                                                              ascending=False)
 
-    # all to files for analysing
-    digit = random.randrange(9999)  # to group results
-    folder = path + str(digit) + str('--')
+    with open("{}{} - result ({} features).html".format(path, datetime.now().strftime("%Y-%m-%d--%H-%M"), str(len(selectedFeatures))), 'w') as _file:
+        _file.write('File generated: {}'.format(datetime.now().strftime("%Y-%m-%d--%H-%M")) + '<br>')
+        _file.write('Features list: <br>{}'.format(featureList.to_html()) + '<br>')
+        _file.write('Summary agg table: <br>{}'.format(summaryTableAgg.to_html()) + '<br>')
+        _file.write('Full summary table: <br>{}'.format(summaryTable.to_html()) + '<br>')
+        _file.write('Legend of iterations table (see columns postfix of header of summary table : <br>{}'.format(legend.to_html()))
 
-    (pd.DataFrame(selectedFeatures, columns=['featureName'])
-     .to_html(
-        folder + 'featureList {}.html'.format(datetime.now().strftime("%Y-%m-%d--%H-%M"))))  # save list of features
-
-    (summaryTable.sort_values(by='Total Acc.', ascending=False)
-     .to_html(folder + 'summaryTableFull {}.html'.format(datetime.now().strftime("%Y-%m-%d--%H-%M"))))
-    (summaryTableAgg[positionColumns + ['Total Acc.', 'Sum Pos.']]
-     .to_html(folder + 'summaryTableAgg {}.html'.format(datetime.now().strftime("%Y-%m-%d--%H-%M"))))
-    legend.to_html(folder + 'summaryLegend {}.html'.format(datetime.now().strftime("%Y-%m--%d_%H-%M")))
-    print('All files for group {} were succesfully saved to disk.\n'.format(digit))
+    print('All files were successfully saved to disk...')
 
     return 0
