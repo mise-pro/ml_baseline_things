@@ -1,5 +1,6 @@
 import pandas as pd
-import numpy as np
+#import numpy as np
+from sklearn.externals import joblib
 
 
 def load_raw_data(folderPath='data_raw/'):
@@ -8,6 +9,13 @@ def load_raw_data(folderPath='data_raw/'):
     dataAll = pd.concat([dataTrain, dataTest])
     print('Train {}; Test {}; Total {}.'.format(dataTrain.shape, dataTest.shape, dataAll.shape))
     return dataTrain, dataTest, dataAll
+
+
+def load_modified_data(path):
+    dataTrain, dataTrainTarget, dataTest, dataTrainScaled, dataTestScaled = joblib.load(path)
+    dataAll = pd.concat([dataTrain, dataTest])
+    print('Train {}; Test {}; Total {}.'.format(dataTrain.shape, dataTest.shape, dataAll.shape))
+    return dataTrain, dataTrainTarget, dataTest, dataTrainScaled, dataTestScaled
 
 
 def check_missing_data(dataTrain, dataTest, featuresList=[]):
