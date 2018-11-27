@@ -1,19 +1,20 @@
 
 import pandas as pd
 #import numpy as np
+from sklearn import svm, tree, linear_model, neighbors, naive_bayes, ensemble, discriminant_analysis, gaussian_process
 import xgboost as xgb
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import SGDClassifier
-from sklearn.ensemble import RandomForestClassifier
-# from sklearn.grid_search import GridSearchCV
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
 import lightgbm as lgb
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC, LinearSVC
+#from sklearn.linear_model import LinearRegression
+#from sklearn.linear_model import LogisticRegression
+#from sklearn.linear_model import SGDClassifier
+#from sklearn.ensemble import RandomForestClassifier
+#from sklearn.neighbors import KNeighborsClassifier
+#from sklearn.naive_bayes import GaussianNB
+
+#from sklearn.tree import DecisionTreeClassifier
+#from sklearn.svm import SVC, LinearSVC
 from sklearn.model_selection import cross_val_score
-from sklearn.linear_model import Perceptron
+#from sklearn.linear_model import Perceptron
 from sklearn import metrics
 from sklearn.model_selection import ParameterGrid
 import time
@@ -43,133 +44,67 @@ def global_check_clf_models (dataMods, dataTarget, cvs, RS, n_jobs = -1, debugMo
     print('Congrats! All DONE. Total time is [mins]: {}\n'.format(round((time.time() - startGlobalTime) / 60., 2)))
     return results
 
-#use this method for debug while adding new model to list
-def check_clf_model_candidate(data, dataTarget, RS, cv, n_jobs, debugMode):
-
-    result = pd.DataFrame(columns=['Model', 'Acc.', 'Std', 'Time'])
-
-    ### enter candidate code here
-
-    result.sort_values(by='Acc.', ascending=False, inplace=True)
-    result.loc[len(result)] = ['TOTAL AVG', result['Accuracy'].mean(), result['Std'].mean()]
-    return result
-
 
 def check_clf_models(data, dataTarget, RS, cv, n_jobs, debugMode):
 
     result = pd.DataFrame(columns=['Model', 'Acc.', 'Std', 'Time'])
 
-    if debugMode:
-        print("SGDClassifier calculating ... ")
+    models = [
 
-    startIterTime = time.time()
-    SGDModel = SGDClassifier(random_state=RS)
-    scores = cross_val_score(SGDModel, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['SGDClassifier model', scores.mean(), scores.std(),
-                               round((time.time() - startIterTime) / 60., 2)]
+        # Ensemble Methods
+        [ensemble.AdaBoostClassifier(random_state=RS), 'AdaBoostClassifier (n=50)'],
+        [ensemble.BaggingClassifier(random_state=RS, n_jobs=n_jobs), 'BaggingClassifier (n=10)'],
+        [ensemble.ExtraTreesClassifier(random_state=RS, n_jobs=n_jobs), 'ExtraTreesClassifier (n=10)'],
+        [ensemble.GradientBoostingClassifier(random_state=RS), 'GradientBoostingClassifier (n=100)'],
+        [ensemble.RandomForestClassifier(random_state=RS, n_jobs=n_jobs), 'RandomForestClassifier (auto)'],
 
-    if debugMode:
-        print("SGDClassifier DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("KNeighborsClassifier calculating ... ")
+        # Gaussian Processes
+        [gaussian_process.GaussianProcessClassifier(random_state=RS, n_jobs=n_jobs), 'GaussianProcessClassifier'],
 
-    startIterTime = time.time()
-    Kngbh = KNeighborsClassifier(n_neighbors=3)
-    scores = cross_val_score(Kngbh, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['KNeighborsClassifier', scores.mean(), scores.std(),
-                               round((time.time() - startIterTime) / 60., 2)]
+        # GLM
+        [linear_model.LogisticRegressionCV(cv=cv, random_state=RS, n_jobs=n_jobs), 'LogisticRegressionCV'],
+        [linear_model.PassiveAggressiveClassifier(random_state=RS, n_jobs=n_jobs), 'PassiveAggressiveClassifier'],
+        [linear_model.RidgeClassifierCV(cv=cv), 'RidgeClassifierCV'],
+        [linear_model.SGDClassifier(random_state=RS, n_jobs=n_jobs), 'SGDClassifier'],
+        [linear_model.Perceptron(random_state=RS, n_jobs=n_jobs), 'Perceptron'],
 
-    if debugMode:
-        print("KNeighborsClassifier DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("SVClinear calculating ... ")
+        # Navies Bayes
+        [naive_bayes.BernoulliNB(), 'BernoulliNB'],
+        [naive_bayes.GaussianNB(), 'GaussianNB'],
 
-    startIterTime = time.time()
-    SVClinear = LinearSVC()
-    scores = cross_val_score(SVClinear, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['SVClinear', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
+        # Nearest Neighbor
+        [neighbors.KNeighborsClassifier(n_jobs=n_jobs, n_neighbors=2), 'KNeighborsClassifier (n=2)'],
 
-    if debugMode:
-        print("SVClinear DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("SVC calculating ... ")
+        # SVM
+        [svm.SVC(random_state=RS, probability=True), 'SVC'],
+        [svm.NuSVC(random_state=RS, probability=True), 'NuSVC'],
+        [svm.LinearSVC(random_state=RS), 'LinearSVC'],
 
-    startIterTime = time.time()
-    SVCclf = SVC()
-    scores = cross_val_score(SVCclf, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['SVC', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
+        # Trees
+        [tree.DecisionTreeClassifier(random_state=RS), 'DecisionTreeClassifier'],
+        [tree.ExtraTreeClassifier(random_state=RS), 'ExtraTreeClassifier'],
 
-    if debugMode:
-        print("SVC DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("GaussianNB calculating ... ")
+        # Discriminant Analysis
+        [discriminant_analysis.LinearDiscriminantAnalysis(), 'LinearDiscriminantAnalysis'],
+        #[discriminant_analysis.QuadraticDiscriminantAnalysis(), 'QuadraticDiscriminantAnalysis'],   #FLOAT16 problem!
 
-    startIterTime = time.time()
-    gausModel = GaussianNB()
-    scores = cross_val_score(gausModel, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['GaussianNB ', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
+        [xgb.XGBClassifier(random_state=RS, n_jobs=n_jobs), 'XGBClassifier'],
+        [lgb.LGBMClassifier(random_state=RS, n_jobs=n_jobs), 'LGBMClassifier']
+    ]
 
-    if debugMode:
-        print("GaussianNB DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("LinearRegression calculating ... ")
 
-    startIterTime = time.time()
-    lrModel = LinearRegression()
-    scores = cross_val_score(lrModel, data, dataTarget, cv=cv, n_jobs=n_jobs, scoring=linear_scorer)
-    result.loc[len(result)] = ['LinearRegression', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
+    for model in models:
+        if debugMode:
+            print("{} calculating...".format(model[1]))
 
-    if debugMode:
-        print("LinearRegression DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("LogisticRegression calculating ... ")
+        startIterTime = time.time()
 
-    startIterTime = time.time()
-    lgrModel = LogisticRegression(random_state=RS)
-    scores = cross_val_score(lgrModel, data, dataTarget, cv=cv, n_jobs=n_jobs, scoring=linear_scorer)
-    result.loc[len(result)] = ['LogisticRegression ', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
+        scores = cross_val_score(model[0], data, dataTarget, cv=cv, n_jobs=n_jobs)
+        result.loc[len(result)] = ['{} model'.format(model[1]), scores.mean(), scores.std(),
+                                   round((time.time() - startIterTime) / 60., 2)]
+        if debugMode:
+            print("{} DONE. Accuracy: {}, std: {}".format(model[1], scores.mean(), scores.std()))
 
-    if debugMode:
-        print("LogisticRegression DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("RandomForestClassifier calculating ... ")
-
-    startIterTime = time.time()
-    rForest = RandomForestClassifier(random_state=RS)
-    scores = cross_val_score(rForest, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['RandomForestClassifier (auto)', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
-
-    if debugMode:
-        print("RandomForestClassifier DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("XGBClassifier calculating ... ")
-
-    startIterTime = time.time()
-    XGBModel = xgb.XGBClassifier(random_state=RS, n_jobs=n_jobs)
-    scores = cross_val_score(XGBModel, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['XGBClassifier ', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
-
-    if debugMode:
-        print("XGBClassifier DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("DecisionTreeClassifier calculating ... ")
-
-    startIterTime = time.time()
-    desTree = DecisionTreeClassifier(random_state=RS)
-    scores = cross_val_score(desTree, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['DecisionTreeClassifier ', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
-
-    if debugMode:
-        print("DecisionTreeClassifier DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("Perceptron calculating ... ")
-
-    startIterTime = time.time()
-    prcModel = Perceptron()
-    scores = cross_val_score(prcModel, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['Perceptron ', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
-
-    if debugMode:
-        print("Perceptron DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
-        print("LightGBM calculating ... ")
-
-    startIterTime = time.time()
-    lgbModel = lgb.LGBMClassifier(random_state=RS)
-    scores = cross_val_score(lgbModel, data, dataTarget, cv=cv, n_jobs=n_jobs)
-    result.loc[len(result)] = ['LightGBM ', scores.mean(), scores.std(), round((time.time() - startIterTime) / 60., 2)]
-
-    if debugMode:
-        print("LightGBM DONE. Accuracy: {}, std: {}".format(scores.mean(), scores.std()))
 
     result.sort_values(by='Acc.', ascending=False, inplace=True)
     result.loc[len(result)] = ['TOTAL AVG', result['Acc.'].mean(), result['Std'].mean(), result['Time'].mean()]

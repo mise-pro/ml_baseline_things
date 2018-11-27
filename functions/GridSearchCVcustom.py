@@ -46,7 +46,7 @@ def detect_search_params(search):
 
 
 def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, scoring='accuracy', printNotes=True,
-                       countdownElems=1, pre_dispatch=1, showSteps=False, itersToPerform = None):
+                       countdownElems=5, pre_dispatch=1, showSteps=False, itersToPerform = None):
 
     if itersToPerform == 'All':
         itersToPerform = [i+1 for i in range(0, len(list(ParameterGrid(param_grid))))]
