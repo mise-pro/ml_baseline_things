@@ -45,7 +45,7 @@ def detect_search_params(search):
     return clf, clf_params, vect, vect_params
 
 
-def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, scoring='accuracy', printNotes=True,
+def GridSearchCVcustom(pipeline, param_grid, data, labels,  cv=5, n_jobs=-1, scoring=None, printNotes=True,
                        countdownElems=5, pre_dispatch=1, showSteps=False, itersToPerform = None):
 
     if itersToPerform == 'All':

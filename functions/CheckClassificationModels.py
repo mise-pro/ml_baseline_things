@@ -27,7 +27,7 @@ def linear_scorer(estimator, x, y):
     scorer_predictions[scorer_predictions <= 0.5] = 0
     return metrics.accuracy_score(y, scorer_predictions)
 
-def global_check_clf_models (dataMods, dataTarget, cvs, RS, n_jobs = -1, debugMode=0):
+def global_check_clf_models (dataMods, dataTarget, scoring, cvs, RS, n_jobs = -1, debugMode=0):
     startGlobalTime = time.time()
     results = []
 
@@ -37,15 +37,15 @@ def global_check_clf_models (dataMods, dataTarget, cvs, RS, n_jobs = -1, debugMo
 
     for iterCheck in list(ParameterGrid(paramGrid)):
         startIterTime = time.time()
-        result = check_clf_models(iterCheck['dataMods'][1], dataTarget, RS, iterCheck['cv_strategy'], n_jobs, debugMode)
+        result = check_clf_models(iterCheck['dataMods'][1], dataTarget, RS, scoring, iterCheck['cv_strategy'], n_jobs, debugMode)
         results.append([iterCheck['dataMods'][0], iterCheck['cv_strategy'], result])
         print('Iteration done in {} [mins]'.format(round((time.time() - startIterTime) / 60., 2)))
 
-    print('Congrats! All DONE. Total time is [mins]: {}\n'.format(round((time.time() - startGlobalTime) / 60., 2)))
+    print('Congrats! All DONE. Total time is [mins]: {}'.format(round((time.time() - startGlobalTime) / 60., 2)))
     return results
 
 
-def check_clf_models(data, dataTarget, RS, cv, n_jobs, debugMode):
+def check_clf_models(data, dataTarget, RS, scoring, cv, n_jobs, debugMode):
 
     result = pd.DataFrame(columns=['Model', 'Acc.', 'Std', 'Time'])
 
@@ -99,7 +99,7 @@ def check_clf_models(data, dataTarget, RS, cv, n_jobs, debugMode):
 
         startIterTime = time.time()
 
-        scores = cross_val_score(model[0], data, dataTarget, cv=cv, n_jobs=n_jobs)
+        scores = cross_val_score(model[0], data, dataTarget, scoring=scoring, cv=cv, n_jobs=n_jobs)
         result.loc[len(result)] = ['{} model'.format(model[1]), scores.mean(), scores.std(),
                                    round((time.time() - startIterTime) / 60., 2)]
         if debugMode:
@@ -157,6 +157,6 @@ def postprocess_and_save_results(results, selectedFeatures, cvs, dataTrainMods, 
         _file.write('Full summary table: <br>{}'.format(summaryTable.to_html()) + '<br>')
         _file.write('Legend of iterations table (see columns postfix of header of summary table : <br>{}'.format(legend.to_html()))
 
-    print('All files were successfully saved to disk...')
+    print('All files were successfully saved to disk...\n')
 
     return 0
